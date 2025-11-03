@@ -4,8 +4,6 @@ Updates includes:
 1. download of images via background thread, this makes the process more faster. For product images, the function below was added for this purpose.
 
    ```def _update_product_image_now(self, tmpl_id, url):
-        """Schedule immediate image download & update using a thread pool."""
-
         def task1(product_id, image_url, registry):
             image_data = _download_first_ok(image_url)
             if not image_data:
