@@ -50,51 +50,51 @@ Function to run in background to download images:
 
 Function to download extra images Also runs in background to download extra images:
 
-def create_images(self, item, extras, tmpl, tmpl_name, has_vendor_flag, has_vendor_url, ProductImage, sku):
-        def task(item, extras, tmpl, tmpl_name, has_vendor_flag, has_vendor_url, ProductImage, sku, registry):
-
-            for attempt in range(MAX_RETRIES):
-                try:
-                    # create a new cursor & environment inside thread
-                    with registry.cursor() as cr:
-                        env = api.Environment(cr, SUPERUSER_ID, {})
-                        ProductImage = env['product.image']
-                        # descargar binarios
-                        binaries = []
-                        referer = item.get('product_url') or item.get('url') or None
-                        for url in extras:
-                            content = _download(url, referer=referer)
-                            if content:
-                                binaries.append((url, base64.b64encode(content)))
-
-                        created = 0
-                        template = env['product.template'].browse(tmpl)
-                        for url, b64 in binaries:
-                            vals = {'product_tmpl_id': tmpl, 'name': tmpl_name or 'Image', 'image_1920': b64}
-                            if has_vendor_flag:
-                                vals['x_vendor_image'] = True
-                            if has_vendor_url:
-                                vals['x_vendor_image_url'] = url
-                            ProductImage.create(vals)
-                            created += 1
-
-                        # también rellenar image_1..image_5 si existen
-                        for i, (url, b64) in enumerate(binaries[:5], start=1):
-                            f = f'image_{i}'
-                            if f in template._fields:
-                                template.sudo().write({f: b64})
-
-                        if created == 0:
-                            _logger.info("Vendor gallery: %s -> +0 images (sku=%s)", template.sudo().display_name, sku)
-                        else:
-                            _logger.info("Vendor gallery: %s -> +%d images", template.sudo().display_name, created)
-
-                except Exception as e_outer:
-                    _logger.exception("Thread failed for Product ID %s: %s", template.sudo().name, e_outer)
-                    break
-
-        # pass registry instead of self
-        EXECUTOR2.submit(task, item, extras, tmpl, tmpl_name, has_vendor_flag, has_vendor_url, ProductImage, sku, self.env.registry)
+    def create_images(self, item, extras, tmpl, tmpl_name, has_vendor_flag, has_vendor_url, ProductImage, sku):
+            def task(item, extras, tmpl, tmpl_name, has_vendor_flag, has_vendor_url, ProductImage, sku, registry):
+    
+                for attempt in range(MAX_RETRIES):
+                    try:
+                        # create a new cursor & environment inside thread
+                        with registry.cursor() as cr:
+                            env = api.Environment(cr, SUPERUSER_ID, {})
+                            ProductImage = env['product.image']
+                            # descargar binarios
+                            binaries = []
+                            referer = item.get('product_url') or item.get('url') or None
+                            for url in extras:
+                                content = _download(url, referer=referer)
+                                if content:
+                                    binaries.append((url, base64.b64encode(content)))
+    
+                            created = 0
+                            template = env['product.template'].browse(tmpl)
+                            for url, b64 in binaries:
+                                vals = {'product_tmpl_id': tmpl, 'name': tmpl_name or 'Image', 'image_1920': b64}
+                                if has_vendor_flag:
+                                    vals['x_vendor_image'] = True
+                                if has_vendor_url:
+                                    vals['x_vendor_image_url'] = url
+                                ProductImage.create(vals)
+                                created += 1
+    
+                            # también rellenar image_1..image_5 si existen
+                            for i, (url, b64) in enumerate(binaries[:5], start=1):
+                                f = f'image_{i}'
+                                if f in template._fields:
+                                    template.sudo().write({f: b64})
+    
+                            if created == 0:
+                                _logger.info("Vendor gallery: %s -> +0 images (sku=%s)", template.sudo().display_name, sku)
+                            else:
+                                _logger.info("Vendor gallery: %s -> +%d images", template.sudo().display_name, created)
+    
+                    except Exception as e_outer:
+                        _logger.exception("Thread failed for Product ID %s: %s", template.sudo().name, e_outer)
+                        break
+    
+            # pass registry instead of self
+            EXECUTOR2.submit(task, item, extras, tmpl, tmpl_name, has_vendor_flag, has_vendor_url, ProductImage, sku, self.env.registry)
 
 Please when run from shell and you get concurrent update error, exit the shell and try again. These two functions are uptimised for parallel downlaod of images. They are both called in _upsert_product in 
 1. _gallery_multi_images_patch.py and vendor_catalog.py
