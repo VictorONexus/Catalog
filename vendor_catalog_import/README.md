@@ -1,9 +1,11 @@
 # vendor_catalog_import
 
 Updates includes:
-1. download of images via background thread, this makes the process more faster. For product images, the function below was added for this purpose
+1. download of images via background thread, this makes the process more faster. For product images, the function below was added for this purpose.
 
-   def _update_product_image_now(self, tmpl_id, url):
+   ```def _update_product_image_now(self, tmpl_id, url):
+        """Schedule immediate image download & update using a thread pool."""
+
         def task1(product_id, image_url, registry):
             image_data = _download_first_ok(image_url)
             if not image_data:
@@ -47,4 +49,4 @@ Updates includes:
 
         # pass registry instead of self
         time.sleep(2)
-        EXECUTOR.submit(task1, tmpl_id, url, self.env.registry)
+        EXECUTOR.submit(task1, tmpl_id, url, self.env.registry)```
